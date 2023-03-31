@@ -1,0 +1,173 @@
+TYPE
+  LOGLEVEL : (CRITICAL, WARNING, INFO, DEBUG) := INFO;
+END_TYPE
+
+FUNCTION_BLOCK LOGGER
+  VAR_INPUT
+    TRIG : BOOL;
+    MSG : STRING;
+    LEVEL : LOGLEVEL := INFO;
+  END_VAR
+  VAR
+    TRIG0 : BOOL;
+  END_VAR
+
+  IF TRIG AND NOT TRIG0 THEN
+  {{
+   LogMessage(GetFbVar(LEVEL),(char*)GetFbVar(MSG, .body),GetFbVar(MSG, .len));
+  }}
+  END_IF;
+  TRIG0:=TRIG;
+END_FUNCTION_BLOCK
+
+
+
+FUNCTION_BLOCK python_eval
+  VAR_INPUT
+    TRIG : BOOL;
+    CODE : STRING;
+  END_VAR
+  VAR_OUTPUT
+    ACK : BOOL;
+    RESULT : STRING;
+  END_VAR
+  VAR
+    STATE : DWORD;
+    BUFFER : STRING;
+    PREBUFFER : STRING;
+    TRIGM1 : BOOL;
+    TRIGGED : BOOL;
+  END_VAR
+
+  {extern void __PythonEvalFB(int, PYTHON_EVAL*);__PythonEvalFB(0, data__);}
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK python_poll
+  VAR_INPUT
+    TRIG : BOOL;
+    CODE : STRING;
+  END_VAR
+  VAR_OUTPUT
+    ACK : BOOL;
+    RESULT : STRING;
+  END_VAR
+  VAR
+    STATE : DWORD;
+    BUFFER : STRING;
+    PREBUFFER : STRING;
+    TRIGM1 : BOOL;
+    TRIGGED : BOOL;
+  END_VAR
+
+  {extern void __PythonEvalFB(int, PYTHON_EVAL*);__PythonEvalFB(1,(PYTHON_EVAL*)(void*)data__);}
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK python_gear
+  VAR_INPUT
+    N : UINT;
+    TRIG : BOOL;
+    CODE : STRING;
+  END_VAR
+  VAR_OUTPUT
+    ACK : BOOL;
+    RESULT : STRING;
+  END_VAR
+  VAR
+    py_eval : python_eval;
+    COUNTER : UINT;
+    _TMP_ADD10_OUT : UINT;
+    _TMP_EQ13_OUT : BOOL;
+    _TMP_SEL15_OUT : UINT;
+    _TMP_AND7_OUT : BOOL;
+  END_VAR
+
+  _TMP_ADD10_OUT := ADD(COUNTER, 1);
+  _TMP_EQ13_OUT := EQ(N, _TMP_ADD10_OUT);
+  _TMP_SEL15_OUT := SEL(_TMP_EQ13_OUT, _TMP_ADD10_OUT, 0);
+  COUNTER := _TMP_SEL15_OUT;
+  _TMP_AND7_OUT := AND(_TMP_EQ13_OUT, TRIG);
+  py_eval(TRIG := _TMP_AND7_OUT, CODE := CODE);
+  ACK := py_eval.ACK;
+  RESULT := py_eval.RESULT;
+END_FUNCTION_BLOCK
+
+
+PROGRAM SWITCHVSLAMPS
+  VAR_INPUT
+    PB1 : BOOL;
+    PB2 : BOOL;
+    PB3 : BOOL;
+    PB4 : BOOL;
+    PB5 : BOOL;
+    PB6 : BOOL;
+    PB7 : BOOL;
+  END_VAR
+  VAR_OUTPUT
+    L1 : BOOL;
+    L2 : BOOL;
+    L3 : BOOL;
+    L4 : BOOL;
+    L5 : BOOL;
+    L6 : BOOL;
+    L7 : BOOL;
+    L8 : BOOL;
+    L9 : BOOL;
+  END_VAR
+  VAR
+    SR0 : SR;
+    SR1 : SR;
+    SR2 : SR;
+    SR3 : SR;
+    SR4 : SR;
+    SR5 : SR;
+    SR6 : SR;
+    SR7 : SR;
+    SR8 : SR;
+    _TMP_OR34_OUT : BOOL;
+    _TMP_OR27_OUT : BOOL;
+    _TMP_OR28_OUT : BOOL;
+    _TMP_OR26_OUT : BOOL;
+    _TMP_OR30_OUT : BOOL;
+    _TMP_OR32_OUT : BOOL;
+    _TMP_OR29_OUT : BOOL;
+    _TMP_OR31_OUT : BOOL;
+    _TMP_OR33_OUT : BOOL;
+  END_VAR
+
+  _TMP_OR34_OUT := OR(PB6, PB7);
+  SR8(S1 := PB3, R := _TMP_OR34_OUT);
+  L7 := SR8.Q1;
+  _TMP_OR27_OUT := OR(PB4, PB7);
+  SR0(S1 := PB1, R := _TMP_OR27_OUT);
+  L1 := SR0.Q1;
+  _TMP_OR28_OUT := OR(PB5, PB7);
+  SR5(S1 := PB2, R := _TMP_OR28_OUT);
+  L4 := SR5.Q1;
+  _TMP_OR26_OUT := OR(PB6, PB7);
+  SR1(S1 := PB1, R := _TMP_OR26_OUT);
+  L2 := SR1.Q1;
+  _TMP_OR30_OUT := OR(PB4, PB7);
+  SR3(S1 := PB2, R := _TMP_OR30_OUT);
+  L5 := SR3.Q1;
+  _TMP_OR32_OUT := OR(PB5, PB7);
+  SR6(S1 := PB3, R := _TMP_OR32_OUT);
+  L8 := SR6.Q1;
+  _TMP_OR29_OUT := OR(PB5, PB7);
+  SR2(S1 := PB1, R := _TMP_OR29_OUT);
+  L3 := SR2.Q1;
+  _TMP_OR31_OUT := OR(PB6, PB7);
+  SR4(S1 := PB2, R := _TMP_OR31_OUT);
+  L6 := SR4.Q1;
+  _TMP_OR33_OUT := OR(PB4, PB7);
+  SR7(S1 := PB3, R := _TMP_OR33_OUT);
+  L9 := SR7.Q1;
+END_PROGRAM
+
+
+CONFIGURATION Config0
+
+  RESOURCE Res0 ON PLC
+    TASK task0(INTERVAL := T#20ms,PRIORITY := 0);
+    PROGRAM instance0 WITH task0 : SWITCHVSLAMPS;
+  END_RESOURCE
+END_CONFIGURATION
